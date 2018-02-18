@@ -151,8 +151,8 @@ namespace AzureaProxy
                 string bodyString = null;
 
                 if (e.WebSession.Request.HasBody)
-                    await e.GetRequestBodyAsString();
-
+                    bodyString = await e.GetRequestBodyAsString();
+                
                 e.WebSession.Request.Headers.Headers["Authorization"].Value =
                     OAuth.GenerateAuthorization(
                         ct,

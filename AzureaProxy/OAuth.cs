@@ -1,4 +1,4 @@
-﻿// By RyuaNerin
+// By RyuaNerin
 // 트위터 라이브러리 만들던것에서 빼옴
 
 using System;
@@ -183,7 +183,11 @@ namespace Limitation
 
         private static void AddDictionary(IDictionary<string, object> dic, object values)
         {
-            if (values is IDictionary<string, string>)
+            if (values is string)
+            {
+                AddDictionary(dic, (string)values);
+            }
+            else if (values is IDictionary<string, string>)
             {
                 foreach (var p in (IDictionary<string, object>)values)
                 {
