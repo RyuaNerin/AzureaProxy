@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -14,8 +14,8 @@ namespace AzureaProxy
 {
     public partial class Form1 : Form
     {
-        const string ct = "CjulERsDeqhhjSme66ECg";
-        const string cs = "IQWdVyqFxghAtURHGeGiWAsmCAGmdW3WmbEx6Hck";
+        static string ct;
+        static string cs;
         static string ut;
         static string us;
 
@@ -39,8 +39,10 @@ namespace AzureaProxy
             {
                 var ff = File.ReadAllLines("token.txt");
 
-                ut = ff[0];
-                us = ff[1];
+                ct = ff[0];
+                cs = ff[1];
+                ut = ff[2];
+                us = ff[3];
 
                 this.Left = -1000;
                 this.Top = -1000;
@@ -139,6 +141,10 @@ namespace AzureaProxy
 
             var explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Loopback, 8080, true);
             sr.AddEndPoint(explicitEndPoint);
+            
+#if DEBUG
+            sr.UpStreamHttpProxy  = sr.UpStreamHttpsProxy = new ExternalProxy { HostName = "localhost", Port = 8888 };
+#endif
             sr.Start();
         }
         
@@ -146,14 +152,16 @@ namespace AzureaProxy
         {
             var requestHeaders = e.WebSession.Request.Headers;
 
-            if (requestHeaders.HeaderExists("Authorization") && requestHeaders.Headers["Authorization"].Value.Contains("SyFYmZ2qa9eI9p7sheZFlw"))
+            //if (requestHeaders.HeaderExists("Authorization") && requestHeaders.Headers["Authorization"].Value.Contains("SyFYmZ2qa9eI9p7sheZFlw"))
+            var headerExists = requestHeaders.HeaderExists("Authorization");
+            if (headerExists || e.WebSession.Request.Url.Contains("oauth_signature"))
             {
                 string bodyString = null;
 
                 if (e.WebSession.Request.HasBody)
                     bodyString = await e.GetRequestBodyAsString();
                 
-                e.WebSession.Request.Headers.Headers["Authorization"].Value =
+                var newAuthorization = 
                     OAuth.GenerateAuthorization(
                         ct,
                         cs,
@@ -163,13 +171,28 @@ namespace AzureaProxy
                         e.WebSession.Request.Url,
                         bodyString);
 
+                if (headerExists)
+                    e.WebSession.Request.Headers.Headers["Authorization"].Value = newAuthorization;
+                else
+                    e.WebSession.Request.Headers.AddHeader("Authorization", newAuthorization);
+
                 if (e.WebSession.Request.HasBody)
                 {
                     await e.SetRequestBodyString(bodyString);
 
-                    byte[] bodyBytes = await e.GetRequestBody();
+                    var bodyBytes = await e.GetRequestBody();
+
                     await e.SetRequestBody(bodyBytes);
                 }
+            }
+            else if (e.WebSession.Request.HasBody)
+            {
+                var bodyString = await e.GetRequestBodyAsString();
+                await e.SetRequestBodyString(bodyString);
+
+                var bodyBytes = await e.GetRequestBody();
+                await e.SetRequestBody(bodyBytes);
+
             }
         }
 

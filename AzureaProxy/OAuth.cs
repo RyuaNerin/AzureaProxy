@@ -176,6 +176,7 @@ namespace Limitation
                         read = query.Length;
                     }
 
+                    if (Array.IndexOf(oauth_array, key) != -1) continue;
                     dic[key] = val;
                 }
             }
@@ -191,6 +192,8 @@ namespace Limitation
             {
                 foreach (var p in (IDictionary<string, object>)values)
                 {
+                    if (Array.IndexOf(oauth_array, p.Key) != -1) continue;
+
                     if (p.Value is bool)
                         dic[p.Key] = (bool)p.Value ? "true" : "false";
                     else
@@ -203,6 +206,8 @@ namespace Limitation
 
                 foreach (var p in values.GetType().GetProperties())
                 {
+                    if (Array.IndexOf(oauth_array, p.Name) != -1) continue;
+
                     if (!p.CanRead) continue;
                     value = p.GetValue(values, null);
 
